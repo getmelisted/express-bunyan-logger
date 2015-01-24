@@ -90,7 +90,7 @@ module.exports.errorLogger = function (opts) {
                 responseTime = Date.now() - startTime,
                 ip, logFn;
 
-            var level = levelFn(status, err);
+            var level = levelFn(status, err, responseTime);
             logFn = childLogger[level] ? childLogger[level] : childLogger.info;
 
             ip = ip || req.ip || req.connection.remoteAddress ||
@@ -167,10 +167,13 @@ function compile(fmt) {
 }
 
 
-function defaultLevelFn(status, err) {
-    if (err || status >= 500) { // server internal error or error
+function defaultLevelFn(status, err, responseTime) {
+    console.log(responseTime);
+    if (responseTime > 10000) {
+        return "fatal"
+    } else if (err || status >= 500 || responseTime > 2000) {
         return "error";
-    } else if (status >= 400) { // client error
+    } else if (status >= 400) {
         return "warn";
     }
     return "info";
