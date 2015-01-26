@@ -168,7 +168,6 @@ function compile(fmt) {
 
 
 function defaultLevelFn(status, err, responseTime) {
-    console.log(responseTime);
     if (responseTime > 10000) {
         return "fatal"
     } else if (err || status >= 500 || responseTime > 2000) {
