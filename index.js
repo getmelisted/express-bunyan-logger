@@ -18,7 +18,8 @@ module.exports.errorLogger = function (opts) {
         parseUA = true,
         excludes,
         genReqId = defaultGenReqId,
-        levelFn = defaultLevelFn;
+        levelFn = defaultLevelFn,
+        reqPaths;
 
     if (opts.logger) {
       logger = opts.logger;
@@ -46,10 +47,14 @@ module.exports.errorLogger = function (opts) {
         delete opts.excludes;
     }
 
+    if (opts.reqPaths) {
+        reqPaths = opts.reqPaths;
+        delete opts.reqPaths;
+    }
 
     if (opts.genReqId) {
         genReqId = typeof genReqId == 'function' ? opts.genReqId : defaultGenReqId;
-    }else if (opts.hasOwnProperty('genReqId')) {
+    } else if (opts.hasOwnProperty('genReqId')) {
         genReqId = false;
     }
 
@@ -67,12 +72,21 @@ module.exports.errorLogger = function (opts) {
             logger = bunyan.createLogger(opts);
         }
 
-        var requestId;
+        var childLogger = logger;
 
-        if (genReqId) 
-          requestId = genReqId(req);
+        if (genReqId || reqPaths) {
+            var childLoggerObj = {};
+            if (genReqId) {
+                childLoggerObj.req_id = genReqId(req);
+            }
+            if (reqPaths) {
+                reqPaths.forEach(function (path) {
+                    childLoggerObj[path.split('.').pop()] = path.split('.').reduce(function(obj, i) { return obj ? obj[i] : undefined; }, req);
+                });
+            }
+            childLogger = logger.child(childLoggerObj);
+        }
 
-        var childLogger = requestId !== undefined ? logger.child({req_id: requestId}) : logger;
         req.log = childLogger;
 
         function logging(incoming) {
